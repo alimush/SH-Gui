@@ -3,13 +3,15 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaUserAlt, FaLock, FaClipboardList } from "react-icons/fa";
+import { FaUserAlt, FaLock, FaClipboardList , FaEye, FaEyeSlash  } from "react-icons/fa";
+
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const router = useRouter();
+  const [show, setShow] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -83,18 +85,25 @@ export default function LoginPage() {
               كلمة المرور
             </label>
             <div className="flex items-center border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-indigo-400 bg-white/70">
-              <span className="px-3 text-indigo-600 text-lg">
-                <FaLock />
-              </span>
-              <input
-                type="password"
-                className="w-full p-3 rounded-r-lg focus:outline-none text-gray-800 bg-transparent focus:scale-105 transition-transform duration-200"
-                placeholder="اكتب كلمة المرور"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
+      <span className="px-3 text-indigo-600 text-lg">
+        <FaLock />
+      </span>
+      <input
+        type={show ? "text" : "password"}
+        className="w-full p-3 rounded-r-lg focus:outline-none text-gray-800 bg-transparent focus:scale-105 transition-transform duration-200"
+        placeholder="اكتب كلمة المرور"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="px-3 text-gray-500 hover:text-indigo-600 focus:outline-none"
+      >
+        {show ? <FaEyeSlash /> : <FaEye />}
+      </button>
+    </div>
           </div>
 
           {/* زر */}

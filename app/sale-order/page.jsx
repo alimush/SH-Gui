@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 
@@ -14,6 +14,7 @@ export default function SaleOrderPage() {
 
 );
 const router = useRouter();
+
 
 
   // فورماتر لفواصل الآلاف
@@ -40,8 +41,13 @@ const router = useRouter();
   const inputsRef = useRef([]);
 
   const addItem = () => {
-    setItems([...items, { itemCode: "", description: "", quantity: 1, price: 0 }]);
+    setItems((prev) => [
+      ...prev,
+      { id: Date.now(), itemCode: "", description: "", quantity: 1, price: 0 }
+    ]);
   };
+  
+  
 
   const updateItem = (index, field, value) => {
     const newItems = [...items];
@@ -49,9 +55,11 @@ const router = useRouter();
     setItems(newItems);
   };
 
-  const removeItem = (index) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
+  const removeItem = (id) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
   };
+  
+  
 
   const total = items.reduce(
     (sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.price) || 0),
@@ -206,29 +214,38 @@ const router = useRouter();
 
             {/* المنصة = مبلغ الضريبة (مبلغ ثابت) */}
             <motion.div variants={item}>
-              <label className="block text-xs font-medium text-gray-600 mb-1">المنصة </label>
-              <input
-                inputMode="numeric"
-                className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white/70 
-                           focus:ring-2 focus:ring-indigo-400 focus:scale-105 transition-transform duration-200"
-                placeholder="0"
-                
-                onChange={(e) => setPlatformAmt(parseMoney(e.target.value))}
-              />
-            </motion.div>
+  <label className="block text-xs font-medium text-gray-600 mb-1">المنصة </label>
+  <input
+    inputMode="numeric"
+    className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white/70 
+               focus:ring-2 focus:ring-indigo-400 focus:scale-105 transition-transform duration-200"
+    placeholder="0"
+    value={platformAmt ? platformAmt.toLocaleString("en-US") : ""}
+    onChange={(e) => {
+      const rawValue = e.target.value.replace(/,/g, "");
+      const num = Number(rawValue);
+      setPlatformAmt(isNaN(num) ? 0 : num);
+    }}
+  />
+</motion.div>
 
-            {/* الخصم = مبلغ ثابت */}
-            <motion.div variants={item}>
-              <label className="block text-xs font-medium text-gray-600 mb-1">الخصم (مبلغ)</label>
-              <input
-                inputMode="numeric"
-                className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white/70 
-                           focus:ring-2 focus:ring-indigo-400 focus:scale-105 transition-transform duration-200"
-                placeholder="0"
+{/* الخصم = مبلغ ثابت */}
+<motion.div variants={item}>
+  <label className="block text-xs font-medium text-gray-600 mb-1">الخصم</label>
+  <input
+    inputMode="numeric"
+    className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white/70 
+               focus:ring-2 focus:ring-indigo-400 focus:scale-105 transition-transform duration-200"
+    placeholder="0"
+    value={discountAmt ? discountAmt.toLocaleString("en-US") : ""}
+    onChange={(e) => {
+      const rawValue = e.target.value.replace(/,/g, "");
+      const num = Number(rawValue);
+      setDiscountAmt(isNaN(num) ? 0 : num);
+    }}
+  />
+</motion.div>
 
-                onChange={(e) => setDiscountAmt(parseMoney(e.target.value))}
-              />
-            </motion.div>
 
             <motion.div variants={item}>
               <label className="block text-xs font-medium text-gray-600 mb-1">الجهة</label>
@@ -237,8 +254,9 @@ const router = useRouter();
                            focus:ring-2 focus:ring-indigo-400 focus:scale-105 transition-transform duration-200"
               >
                 <option>قسم العلاقات العامة</option>
-                <option>زبون قديم</option>
                 <option>تواصل اجتماعي</option>
+                <option>الناس</option>
+                <option>زبون قديم</option>
               </select>
             </motion.div>
           </motion.section>
@@ -249,27 +267,31 @@ const router = useRouter();
               تفاصيل الأصناف
             </h3>
             <div className="overflow-x-auto rounded-lg border border-gray-300 bg-white/70">
-              <table className="w-full text-sm text-gray-700">
-                <thead className="bg-indigo-100">
-                  <tr>
-                    <th className="p-2 border">رمز الصنف</th>
-                    <th className="p-2 border">الوصف</th>
-                    <th className="p-2 border">الكمية</th>
-                    <th className="p-2 border">سعر الوحدة</th>
-                    <th className="p-2 border">الإجمالي</th>
-                    <th className="p-2 border">إجراء</th>
-                  </tr>
-                </thead>
+            <table className="w-full text-sm text-gray-700 table-fixed">
+
+               <thead className="bg-indigo-100">
+  <tr>
+    <th className="p-2 border w-32">رمز الصنف</th>
+    <th className="p-2 border">الوصف</th>  
+    <th className="p-2 border w-20">الكمية</th>
+    <th className="p-2 border w-32">سعر الوحدة</th>
+    <th className="p-2 border w-32">الإجمالي</th>
+    <th className="p-2 border w-20">إجراء</th>
+  </tr>
+</thead>
+
                 <tbody>
                   <AnimatePresence>
-                    {items.map((item, i) => (
-                      <motion.tr
-                        key={i}
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        transition={{ duration: 0.3 }}
-                      >
+                  {items.map((item, i) => (
+  <motion.tr
+    key={item.id}   // 👈 مهم يكون id مو i
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: 20 }}
+    transition={{ duration: 0.3 }}
+  >
+
+
                         <td className="p-2 border">
                           <input
                             ref={(el) => (inputsRef.current[i * 4] = el)}
@@ -294,33 +316,40 @@ const router = useRouter();
                             type="number"
                             min={1}
                             className="w-full p-1 border rounded focus:scale-105 transition-transform duration-200 focus:ring-1 focus:ring-purple-300 focus:outline-none"
-                            value={item.quantity}
+                            // value={item.quantity}
                             onChange={(e) => updateItem(i, "quantity", Number(e.target.value))}
                             onKeyDown={(e) => handleKeyDown(e, i, 2)}
                           />
                         </td>
                         <td className="p-2 border">
-                          <input
-                            ref={(el) => (inputsRef.current[i * 4 + 3] = el)}
-                            type="number"
-                            min={0}
-                            className="w-full p-1 border rounded focus:scale-105 transition-transform duration-200 focus:ring-1 focus:ring-purple-300 focus:outline-none"
-                            value={item.price}
-                            onChange={(e) => updateItem(i, "price", Number(e.target.value))}
-                            onKeyDown={(e) => handleKeyDown(e, i, 3)}
-                          />
-                        </td>
+  {/* input للعرض مع فواصل */}
+  <input
+    type="text"
+    className="w-full p-1 border rounded focus:scale-105 transition-transform duration-200 focus:ring-1 focus:ring-purple-300 focus:outline-none"
+    value={item.price ? item.price.toLocaleString("en-US") : ""}
+    onChange={(e) => {
+      const rawValue = e.target.value.replace(/,/g, "");
+      const num = Number(rawValue);
+      updateItem(i, "price", isNaN(num) ? 0 : num);
+    }}
+  />
+
+  {/* input مخفي يخزن الرقم الصافي */}
+  <input type="number" value={item.price} hidden readOnly />
+</td>
+
                         <td className="p-2 border text-right">
                           {nf.format((Number(item.quantity) || 0) * (Number(item.price) || 0))} د.ع
                         </td>
                         <td className="p-2 border text-center">
-                          <button
-                            type="button"
-                            onClick={() => removeItem(i)}
-                            className="text-red-500 font-semibold"
-                          >
-                            حذف
-                          </button>
+                        <button
+  type="button"
+  onClick={() => removeItem(item.id)}  // 👈 مرر id بدل i
+  className="text-red-500 font-semibold"
+>
+  حذف
+</button>
+
                         </td>
                       </motion.tr>
                     ))}
@@ -361,7 +390,7 @@ const router = useRouter();
   </div>
 
   <div className="flex justify-between">
-    <span>الخصم (مبلغ):</span>
+    <span>الخصم:</span>
     <span className="font-semibold">{nf.format(safeDiscount)} د.ع</span>
   </div>
 
@@ -371,7 +400,7 @@ const router = useRouter();
   </div>
 
   <div className="flex justify-between">
-    <span>الضريبة (المنصة كمبلغ):</span>
+    <span>المنصة:</span>
     <span className="font-semibold">{nf.format(taxAmount)} د.ع</span>
   </div>
 
@@ -386,7 +415,7 @@ const router = useRouter();
           {/* 🔹 الأزرار */}
           <div className="mt-8 flex justify-end gap-4">
             <button className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold shadow hover:bg-indigo-700">
-              حفظ
+              انشاء امر بيع
             </button>
             <button
               type="button"

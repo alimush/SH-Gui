@@ -1,67 +1,32 @@
-import { SAP_CONFIG } from "@/lib/sapConfig";
+// api/sale-order/route.js
+import axios from "axios";
+import https from "https";
 
-export async function POST(req) {
+export async function GET() {
   try {
-    const body = await req.json();
+    const baseURL = "https://192.168.68.50:50000/b1s/v1";
+    const loginData = {
+      CompanyDB: "MH_TEST04092025",
+      UserName: "manager",
+      Password: "1@@@",
+    };
 
-    // ✅ 1. Login to SAP Service Layer
-    const loginRes = await fetch(`${SAP_CONFIG.baseUrl}/Login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        CompanyDB: SAP_CONFIG.companyDB,
-        UserName: SAP_CONFIG.username,
-        Password: SAP_CONFIG.password,
-      }),
+    // SSL self-signed certificates bypass
+    const agent = new https.Agent({ rejectUnauthorized: false });
+
+    const res = await axios.post(`${baseURL}/Login`, loginData, {
+      httpsAgent: agent,
     });
 
-    if (!loginRes.ok) {
-      const errData = await loginRes.text();
-      return new Response(JSON.stringify({ error: "SAP Login failed", details: errData }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (res.data && res.data.SessionId) {
+      console.log("connected to DB");
+      return new Response("connected to DB ✅", { status: 200 });
+    } else {
+      console.log("failed");
+      return new Response("failed ❌", { status: 500 });
     }
-
-    const cookies = loginRes.headers.get("set-cookie"); // نخزن الـ session cookie
-
-    // ✅ 2. Create Sales Order in SAP
-    const soRes = await fetch(`${SAP_CONFIG.baseUrl}/Orders`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: cookies, // session
-      },
-      body: JSON.stringify({
-        CardCode: body.customerCode, // كود العميل
-        DocDate: body.docDate,       // تاريخ المستند
-        DocDueDate: body.deliveryDate, // تاريخ التسليم
-        DocumentLines: body.items.map((item) => ({
-          ItemCode: item.itemCode,
-          Quantity: Number(item.quantity),
-          UnitPrice: Number(item.price),
-        })),
-      }),
-    });
-
-    if (!soRes.ok) {
-      const errData = await soRes.text();
-      return new Response(JSON.stringify({ error: "Failed to create Sales Order", details: errData }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const result = await soRes.json();
-
-    return new Response(JSON.stringify({ success: true, data: result }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error("Login error:", err.message);
+    return new Response("failed ❌", { status: 500 });
   }
 }

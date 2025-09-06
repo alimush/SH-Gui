@@ -34,8 +34,14 @@ export default function Header() {
         </div>
 
         {/* وسط: العنوان */}
-        <div className="flex justify-center items-center gap-3 whitespace-nowrap text-indigo-600 font-extrabold text-2xl drop-shadow-sm">
-          <FaHome className="text-2xl" />
+          <div
+          className="
+            flex justify-center items-center gap-3 whitespace-nowrap 
+            text-indigo-600 font-extrabold text-xl sm:text-2xl drop-shadow-sm
+            -mt-2 md:mt-0
+          "
+        >
+          <FaHome className="text-xl sm:text-2xl" />
           <span className={rubik.className}>المنزل الحديث</span>
         </div>
 
